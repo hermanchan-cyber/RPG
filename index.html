@@ -3,218 +3,467 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Table Group RPG</title>
+<title>Table Group RPG — Battle & Items</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="RPG">
 <style>
-  body {
-    margin:0;
-    font-family: -apple-system, Inter, Roboto, Arial, sans-serif;
-    background:#0b1220;
-    color:#e5e7eb;
-    display:flex;
-    flex-direction:column;
-    height:100vh;
-    overflow:hidden;
+  :root{
+    --bg:#0b1220;--panel:#111827;--panel2:#0f172a;--text:#e5e7eb;--muted:#9ca3af;
+    --primary:#2563eb;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444;--border:#1f2937;
   }
-  header, footer {padding:8px;background:#111827;display:flex;justify-content:space-between;align-items:center;}
-  h1 {font-size:18px;margin:0;}
-  button {padding:6px 10px;border:none;border-radius:6px;cursor:pointer;}
-  button.attack {background:#2563eb;color:white;}
-  .teams {flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px;padding:8px;}
-  .team {
-    background:#1f2937;border:1px solid #374151;border-radius:10px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:8px;position:relative;
-  }
-  .team .name {font-size:20px;font-weight:bold;margin-bottom:4px;}
-  .team .hp {font-size:16px;}
-  .team .xp {font-size:14px;color:#9ca3af;}
-  .log {height:80px;overflow:auto;font-size:12px;background:#111827;padding:4px;}
-  .overlay {position:fixed;inset:0;background:rgba(0,0,0,.7);
-    display:none;align-items:center;justify-content:center;z-index:100;}
-  .overlay.show {display:flex;}
-  .flash {background:#1f2937;padding:20px;border-radius:12px;text-align:center;max-width:80%;}
-  .flash h2 {margin:0;font-size:28px;}
-  .flash p {margin:8px 0 0;font-size:16px;}
-  #drawCanvas {
-    position:fixed;top:0;left:0;right:0;bottom:0;
-    z-index:200;pointer-events:none; /* off by default */
-  }
-  #tools {position:fixed;bottom:90px;right:10px;z-index:300;
-    background:rgba(17,24,39,.8);padding:6px;border-radius:8px;display:flex;gap:4px;}
-  #tools button {font-size:12px;}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Inter,Roboto,Arial,sans-serif;display:grid;grid-template-rows:auto 1fr auto auto;gap:8px}
+  header, footer{background:var(--panel);border-bottom:1px solid var(--border);padding:8px 10px;display:flex;align-items:center;justify-content:space-between}
+  h1{margin:0;font-size:18px}
+  .status{font-size:13px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px;padding:8px}
+  .card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px;display:grid;grid-template-columns:110px 1fr;gap:10px;position:relative}
+  .avatar{height:100px;border-radius:10px;background:#0b1229;display:flex;align-items:center;justify-content:center;font-size:54px;border:1px solid var(--border)}
+  .name{font-weight:800;font-size:20px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .hp{font-size:16px}
+  .hpbar,.xpbar,.powbar{height:10px;border-radius:999px;background:#0b1229;border:1px solid #1f274f;overflow:hidden;flex:1}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,#22c55e,#16a34a)}
+  .xpf{background:linear-gradient(90deg,#93c5fd,#3b82f6)}
+  .powf{background:linear-gradient(90deg,#fda4af,#ef4444)}
+  .pill{padding:4px 8px;border-radius:999px;background:#0e162b;border:1px solid #1f274f;color:#cbd5e1;font-size:11px}
+  button{border:none;padding:7px 10px;border-radius:10px;background:#334155;color:#fff;font-size:14px}
+  .primary{background:var(--primary)}
+  .attackBtn:active{transform:translateY(1px)}
+  .attackBtn.pressed{animation:pulse .7s ease 1}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(37,99,235,.8)}100%{box-shadow:0 0 0 18px rgba(37,99,235,0)}}
+  .disabled{opacity:.6;pointer-events:none}
+  .badges{display:flex;gap:6px;flex-wrap:wrap}
+  .bag{display:flex;gap:6px;flex-wrap:wrap;min-height:26px}
+  .bagItem{display:flex;gap:6px;align-items:center;border:1px dashed #475569;background:#0d162c;padding:5px 8px;border-radius:10px;font-size:12px}
+  .empty{color:#94a3b8;font-size:12px}
+  .money .btn{padding:4px 8px;border-radius:8px;background:#1f2937}
+  .store{padding:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);border-top:1px solid var(--border)}
+  .sitem{display:flex;gap:8px;align-items:center;border:1px dashed #3652a1;background:#0e1736;padding:8px 10px;border-radius:10px}
+  .sitem.selected{outline:2px solid #7dd3fc}
+  .log{height:90px;overflow:auto;background:var(--panel);border-top:1px solid var(--border);padding:8px;font-size:12px;color:#cbd5e1}
+
+  /* Battle stage overlay */
+  .stage{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:80}
+  .stage.show{display:flex}
+  .arena{width:min(820px,96vw);height:min(420px,60vh);background:radial-gradient(circle at 50% 70%, #123 0%, #0b1220 55%, #07101d 100%);border:1px solid #1f274f;border-radius:16px;position:relative;overflow:hidden}
+  .actor{position:absolute;width:110px;height:110px;border-radius:12px;background:#0b1229;border:1px solid #263a78;display:flex;align-items:center;justify-content:center;font-size:60px;transform:translateY(40px)}
+  .actor.att{left:-130px;bottom:40px}
+  .actor.def{right:-130px;top:40px}
+  .actor.in{transition:transform .45s ease, left .45s ease, right .45s ease}
+  .att.in{left:40px}
+  .def.in{right:40px}
+  .impact{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:52px;opacity:0}
+  .impact.show{animation:boom .5s ease}
+  @keyframes boom{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}60%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+  .projectile{position:absolute;width:18px;height:18px;border-radius:50%;background:#60a5fa;box-shadow:0 0 16px #60a5fa;opacity:.9}
+  .slash{position:absolute;width:120px;height:6px;background:linear-gradient(90deg,#fff,#93c5fd);border-radius:999px;box-shadow:0 0 12px #93c5fd;opacity:.95}
+
+  /* annotation canvas (toggleable) */
+  #drawCanvas{position:fixed;inset:0;z-index:120;pointer-events:none}
+  #tools{position:fixed;bottom:90px;right:10px;z-index:130;background:rgba(17,24,39,.92);padding:6px;border-radius:8px;display:none;gap:6px}
+  #tools button{font-size:12px}
+
 </style>
 </head>
 <body>
 <header>
-  <h1>Table Group RPG</h1>
-  <button id="newGame">New Game</button>
+  <h1>Table Group RPG — Battle & Items</h1>
+  <div class="status">Status: <span id="status">Ready</span></div>
+  <div style="display:flex;gap:6px">
+    <button id="drawToggle">✏️ Draw</button>
+    <button id="newGame" class="bad">New Game</button>
+  </div>
 </header>
 
-<div class="teams" id="teams"></div>
+<main class="grid" id="grid"></main>
 
-<footer>
-  <div>Status: <span id="status">Ready</span></div>
-  <button id="toggleDraw">✏️ Draw</button>
+<footer class="store" id="store">
+  <strong>Store:</strong>
+  <!-- items populated by JS -->
 </footer>
 
 <div class="log" id="log"></div>
 
-<div class="overlay" id="overlay">
-  <div class="flash">
-    <h2 id="flashTitle">Attack!</h2>
-    <p id="flashText">Damage: 5</p>
-    <p style="font-size:12px;color:#9ca3af;">Tap to continue</p>
+<!-- Battle stage -->
+<div class="stage" id="stage" aria-hidden="true">
+  <div class="arena" id="arena">
+    <div class="actor att" id="attSprite">🦁</div>
+    <div class="actor def" id="defSprite">🦅</div>
+    <div class="impact" id="impact">✧</div>
   </div>
 </div>
 
+<!-- Annotation layer -->
 <canvas id="drawCanvas"></canvas>
-<div id="tools" style="display:none;">
-  <button onclick="setColor('black')">Black</button>
+<div id="tools">
   <button onclick="setColor('red')">Red</button>
   <button onclick="setColor('blue')">Blue</button>
+  <button onclick="setColor('black')">Black</button>
   <button onclick="clearCanvas()">Clear</button>
   <button onclick="toggleDraw()">Done</button>
 </div>
 
 <script>
-/* ==== Game State ==== */
-const KEY = "table_rpg_state_v1";
-const overlay = document.getElementById("overlay");
-const flashTitle = document.getElementById("flashTitle");
-const flashText = document.getElementById("flashText");
-const teamsEl = document.getElementById("teams");
-const statusEl = document.getElementById("status");
-const logEl = document.getElementById("log");
+/* ============== DATA & SAVE ============== */
+const KEY="tgrpg_items_battle_v1";
+const PRICES={potion:5, shield:8, poison:7};
+const ITEMS=[
+  {id:'potion', name:'Potion +10', emoji:'🧪', desc:'Heals 10 & cures poison', cost:PRICES.potion},
+  {id:'shield', name:'Shield (10)', emoji:'🛡️', desc:'Adds 10 shield points; each hit blocks a random part', cost:PRICES.shield},
+  {id:'poison', name:'Poison Arrow', emoji:'🏹', desc:'Poisons target (−1 HP on each turn) until cured', cost:PRICES.poison}
+];
 
 let state = load() || {
-  teams: [
-    {id:"g1", name:"Lions 🦁", hp:50, maxHp:50, xp:0},
-    {id:"g2", name:"Bears 🐻", hp:50, maxHp:50, xp:0},
-    {id:"g3", name:"Wolves 🐺", hp:50, maxHp:50, xp:0},
-    {id:"g4", name:"Eagles 🦅", hp:50, maxHp:50, xp:0},
+  teams:[
+    t('g1','Lions','🦁'),
+    t('g2','Bears','🐻'),
+    t('g3','Wolves','🐺'),
+    t('g4','Eagles','🦅')
   ],
-  log:[]
+  log:[],
+  storeSelect:null
 };
+
+function t(id,name,emoji){return{ id,name,emoji, hp:50,maxHp:50, xp:0, next:rand(24,40), level:1, money:0, power:0,
+  flags:{poisoned:false, shieldPoints:0}, pack:{potion:0,shield:0,poison:0} };}
+
+function save(){ try{localStorage.setItem(KEY, JSON.stringify(state));}catch(e){} }
+function load(){ try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch(e){return null;} }
+
+/* ============== UI RENDER ============== */
+const grid = document.getElementById('grid');
+const logEl = document.getElementById('log');
+const statusEl = document.getElementById('status');
+const storeEl = document.getElementById('store');
 
 render();
 
-document.getElementById("newGame").onclick = ()=>{
-  if (!confirm("Start a new game?")) return;
-  state.teams.forEach(t=>{t.hp=50; t.xp=0;});
+document.getElementById('newGame').onclick=()=>{
+  if(!confirm('Reset HP/XP/Items/Money?')) return;
+  state.teams.forEach(x=>{
+    x.hp=50;x.maxHp=50;x.xp=0;x.level=1;x.money=0;x.power=0;
+    x.flags={poisoned:false,shieldPoints:0};x.pack={potion:0,shield:0,poison:0};
+    x.next=rand(24,40);
+  });
   state.log=[];
-  save(); render();
+  save();render();
 };
 
 function render(){
-  teamsEl.innerHTML="";
-  state.teams.forEach(t=>{
-    const div=document.createElement("div");
-    div.className="team";
-    div.id=t.id;
-    div.innerHTML=`<div class="name">${t.name}</div>
-      <div class="hp">HP: ${t.hp}/${t.maxHp}</div>
-      <div class="xp">XP: ${t.xp}</div>
-      <button class="attack">Attack</button>`;
-    div.querySelector("button").onclick=()=>chooseTarget(t);
-    teamsEl.appendChild(div);
-  });
+  grid.innerHTML='';
+  state.teams.forEach(team=>grid.appendChild(teamCard(team)));
+  buildStore();
   renderLog();
 }
 
-function chooseTarget(attacker){
-  statusEl.textContent = `${attacker.name} - choose a target`;
-  Array.from(document.querySelectorAll(".team")).forEach(el=>{
-    el.onclick=()=>{
-      const defender=state.teams.find(tt=>tt.id===el.id);
-      if(defender.id===attacker.id){statusEl.textContent="Can't target self"; return;}
-      performAttack(attacker,defender);
+function teamCard(team){
+  const card = el('div','card');
+  if(team.hp<=0) card.style.opacity=.6;
+
+  const avatar = el('div','avatar',team.emoji);
+
+  const main = el('div');
+  const name = el('div','name',team.name+' ');
+  const badges = el('div','badges');
+  badges.innerHTML = badge(`Lv ${team.level}`)
+    + badge(team.flags.poisoned?'Poisoned':'Healthy', team.flags.poisoned?'#84cc16':'#94a3b8')
+    + (team.flags.shieldPoints>0? badge(`Shield ${team.flags.shieldPoints}`,'#93c5fd'):'');
+  const r1 = row(name,badges);
+
+  const hpTxt = el('div','hp',`HP: ${team.hp}/${team.maxHp}`);
+  const hpbar = bar((team.hp/team.maxHp)*100,'fill');
+  const r2 = row(hpTxt,hpbar);
+
+  const xpTxt = pill('XP');
+  const xpbar = bar((team.xp/team.next)*100,'xpf');
+  const r3 = row(xpTxt,xpbar);
+
+  const powTxt = pill('Attack Power');
+  const powbar = bar(team.power,'powf');
+  const rPow = row(powTxt,powbar);
+
+  const money = el('div','row money');
+  money.innerHTML = `Money: <strong>$${team.money}</strong>`;
+  money.append(btn(' +1 ','btn',()=>{team.money+=1;save();render();}),
+               btn(' +5 ','btn',()=>{team.money+=5;save();render();}),
+               btn(' −1 ','btn',()=>{team.money=Math.max(0,team.money-1);save();render();}));
+
+  const act = el('div','row');
+  const attackB = btn('Attack','primary attackBtn', ()=> chooseTarget(team, attackB));
+  const xpB = btn('+XP','', ()=>{ giveXP(team, randomXP()); save(); render(); });
+  act.append(attackB,xpB);
+
+  const bag = el('div','bag');
+  let filled=0;
+  if(team.pack.potion>0){ bag.append(bagItem('🧪',`x${team.pack.potion}`,()=>usePotion(team))); filled++;}
+  if(team.pack.shield>0){ bag.append(bagItem('🛡️',`x${team.pack.shield}`,()=>useShield(team))); filled++;}
+  if(team.pack.poison>0){ bag.append(bagItem('🏹',`x${team.pack.poison}`,()=>usePoison(team))); filled++;}
+  if(!filled) bag.append(el('div','empty','Backpack empty'));
+
+  main.append(r1,r2,act,r3,rPow,money,bag);
+  card.append(avatar,main);
+  return card;
+}
+
+function badge(text,color){return `<span class="pill" style="${color?`border-color:${color};color:${color}`:''}">${text}</span>`;}
+function row(...kids){const d=el('div','row');kids.forEach(k=>d.append(k));return d;}
+function bar(pct,cls){const b=el('div',cls.includes('xpf')||cls.includes('powf')?'xpbar':'hpbar');const f=el('div','fill '+cls);f.style.width=Math.max(0,Math.min(100,pct))+'%';b.append(f);return b;}
+function pill(t){return el('span','pill',t)}
+function btn(t,cls,fn){const b=el('button',cls,bTxt(t));b.onclick=fn;return b;}
+function bTxt(t){return document.createTextNode(t);}
+function el(tag,cls,txt){const d=document.createElement(tag);if(cls)d.className=cls;if(txt!=null)d.append(txt);return d;}
+function bagItem(emoji,label,fn){const d=el('div','bagItem');d.innerHTML=`<span>${emoji}</span><span>${label}</span>`;d.onclick=fn;return d;}
+
+function renderLog(){ logEl.innerHTML=state.log.slice(-180).map(s=>`<div>${escape(s)}</div>`).join(''); logEl.scrollTop=logEl.scrollHeight; }
+function pushLog(s){ const t=new Date(); const hh=String(t.getHours()).padStart(2,'0'), mm=String(t.getMinutes()).padStart(2,'0'); state.log.push(`[${hh}:${mm}] ${s}`); save(); renderLog(); }
+function escape(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+
+/* ============== STORE (tap-to-buy) ============== */
+function buildStore(){
+  storeEl.innerHTML='<strong>Store:</strong> ';
+  ITEMS.forEach(it=>{
+    const e=el('div','sitem',`${it.emoji} ${it.name} ($${it.cost})`);
+    if(state.storeSelect===it.id) e.classList.add('selected');
+    e.title=it.desc;
+    e.onclick=()=>{
+      state.storeSelect = state.storeSelect===it.id? null : it.id;
+      statusEl.textContent = state.storeSelect? `Selected ${it.name}. Tap a team to buy.` : 'Ready';
+      save(); render();
+      if(state.storeSelect){
+        // let user tap a team card to purchase once
+        Array.from(document.querySelectorAll('.card')).forEach(c=>{
+          c.onclick=()=>{
+            const id = findTeamIdFromCard(c);
+            const team = state.teams.find(t=>t.id===id);
+            tryBuy(team, it.id);
+            state.storeSelect=null; save(); render();
+          };
+        });
+      }
+    };
+    storeEl.appendChild(e);
+  });
+}
+function findTeamIdFromCard(card){
+  // each card has two children: avatar & main; use name text
+  const name = card.querySelector('.name').textContent.split(' ')[0]; // Lions etc.
+  const t = state.teams.find(tt=>tt.name.startsWith(name));
+  return t?t.id:null;
+}
+function tryBuy(team,itemId){
+  const item=ITEMS.find(i=>i.id===itemId); if(!item) return;
+  if(team.money<item.cost){ statusEl.textContent=`${team.name}: need $${item.cost}`; return; }
+  team.money-=item.cost;
+  team.pack[itemId]=(team.pack[itemId]||0)+1;
+  pushLog(`${team.name} bought ${item.name} for $${item.cost}.`);
+  save(); render();
+}
+
+/* ============== ITEMS (use) ============== */
+function usePotion(team){
+  if(team.pack.potion<=0) return;
+  team.pack.potion--;
+  const before=team.hp;
+  team.hp=Math.min(team.maxHp, team.hp+10);
+  team.flags.poisoned=false;
+  pushLog(`${team.name} used Potion (+${team.hp-before}, cured poison).`);
+  save(); render();
+}
+function useShield(team){
+  if(team.pack.shield<=0) return;
+  team.pack.shield--;
+  team.flags.shieldPoints = (team.flags.shieldPoints||0)+10;
+  pushLog(`${team.name} raised Shield (+10).`);
+  save(); render();
+}
+function usePoison(team){
+  if(team.pack.poison<=0) return;
+  // pick target via prompt (quick + iPad-friendly)
+  const alive = state.teams.filter(x=>x.id!==team.id && x.hp>0);
+  if(!alive.length) return;
+  const list = alive.map((t,i)=>`${i+1}) ${t.emoji} ${t.name}`).join('\n');
+  const n = prompt(`Poison who?\n${list}`);
+  if(n==null) return;
+  const idx = Number(n)-1; if(isNaN(idx)||idx<0||idx>=alive.length) return;
+  const target = alive[idx];
+  team.pack.poison--;
+  target.flags.poisoned=true;
+  pushLog(`${team.name} used Poison Arrow on ${target.name}.`);
+  save(); render();
+}
+
+/* ============== ATTACKS & BATTLE STAGE ============== */
+const stage = document.getElementById('stage');
+const attSprite = document.getElementById('attSprite');
+const defSprite = document.getElementById('defSprite');
+const impact = document.getElementById('impact');
+
+function chooseTarget(attacker, attackBtn){
+  statusEl.textContent = `${attacker.name}: pick a target`;
+  attackBtn.classList.add('pressed');
+  // click a card to target
+  Array.from(document.querySelectorAll('.card')).forEach(c=>{
+    c.onclick=()=>{
+      const id = findTeamIdFromCard(c);
+      const defender = state.teams.find(t=>t.id===id);
+      if(!defender || defender.id===attacker.id){ statusEl.textContent='Pick a different team'; return; }
+      // lock buttons during battle
+      Array.from(document.querySelectorAll('button')).forEach(b=>b.classList.add('disabled'));
+      battle(attacker, defender).then(()=>{
+        Array.from(document.querySelectorAll('button')).forEach(b=>b.classList.remove('disabled'));
+        attackBtn.classList.remove('pressed');
+      });
     };
   });
 }
 
-function performAttack(attacker, defender){
-  let dmg=0, label="MISS";
-  const r=Math.random();
-  if(r<0.2){dmg=0;label="MISS";}
-  else if(r<0.8){dmg=Math.floor(Math.random()*5)+2;label="HIT";}
-  else {dmg=Math.floor(Math.random()*10)+10;label="DEVASTATING";}
-  defender.hp=Math.max(0,defender.hp-dmg);
-  attacker.xp+=2; defender.xp+=1;
+async function battle(attacker, defender){
+  // start-of-turn poison tick on everybody poisoned
+  state.teams.forEach(t=>{ if(t.flags.poisoned && t.hp>0){ t.hp=Math.max(0,t.hp-1); } });
 
-  queueOverlay(`${attacker.name} attacks ${defender.name}!`,`${label} • ${dmg} dmg`);
-  state.log.push(`${attacker.name} → ${defender.name}: ${label} ${dmg} dmg`);
+  // roll damage
+  let label='HIT', dmg=0, r=Math.random();
+  if(r<0.18){label='MISS';dmg=0;}
+  else if(r<0.78){label='HIT';dmg=rand(3,7);}
+  else if(r<0.94){label='HEAVY';dmg=rand(8,13);}
+  else {label='DEVASTATING';dmg=rand(14,20);}
+
+  // attack power multiplier (builds when attacked)
+  const usePow = Math.min(attacker.power, 40);
+  if(usePow>0){ const mult=1+(usePow/50); dmg=Math.round(dmg*mult); attacker.power=Math.max(0,attacker.power-usePow); label += ' ×Power'; }
+
+  // shield reduces part of incoming
+  if(dmg>0 && defender.flags.shieldPoints>0){
+    const block = Math.max(1, Math.floor(Math.random()*Math.min(10, defender.flags.shieldPoints)));
+    defender.flags.shieldPoints = Math.max(0, defender.flags.shieldPoints - block);
+    dmg = Math.max(0, dmg - block);
+    pushLog(`${defender.name}'s shield blocks ${block}.`);
+  }
+
+  // run stage animation (Pokémon-style slide-in + fx)
+  await runStage(attacker, defender, label, dmg);
+
+  // apply damage
+  const before=defender.hp;
+  defender.hp=Math.max(0, defender.hp - dmg);
+  const dealt = before-defender.hp;
+
+  // power gain for defender (being attacked charges)
+  defender.power = Math.min(100, defender.power + (dealt>0? 22 : 10));
+
+  // XP (with tiny randomness)
+  let atkXP = dealt>0 ? 1 + Math.floor(dealt/3) : 1;
+  if(Math.random()<0.15) atkXP += 2;
+  let defXP = 1;
+  giveXP(attacker, atkXP); giveXP(defender, defXP);
+
+  pushLog(`${attacker.name} → ${defender.name}: ${label} for ${dealt}. XP: ${attacker.name}+${atkXP}, ${defender.name}+${defXP}`);
+
   save(); render();
 }
 
-function queueOverlay(title,text){
-  flashTitle.textContent=title;
-  flashText.textContent=text;
-  overlay.classList.add("show");
-}
-overlay.onclick=()=>overlay.classList.remove("show");
-
-function renderLog(){
-  logEl.innerHTML=state.log.slice(-20).map(x=>`<div>${x}</div>`).join("");
-  logEl.scrollTop=logEl.scrollHeight;
-}
-
-function save(){localStorage.setItem(KEY, JSON.stringify(state));}
-function load(){try{return JSON.parse(localStorage.getItem(KEY));}catch(e){return null;}}
-
-/* ==== Drawing Layer ==== */
-const drawCanvas = document.getElementById('drawCanvas');
-const ctx = drawCanvas.getContext('2d');
-resize();
-
-let drawing=false, lastX=0, lastY=0;
-let drawColor='red';
-let drawingActive=false;
-
-function resize(){
-  drawCanvas.width = window.innerWidth;
-  drawCanvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-
-drawCanvas.addEventListener('pointerdown', e=>{
-  if(!drawingActive) return;
-  drawing=true; [lastX,lastY]=[e.offsetX,e.offsetY];
-});
-drawCanvas.addEventListener('pointerup', ()=> drawing=false);
-drawCanvas.addEventListener('pointerout', ()=> drawing=false);
-drawCanvas.addEventListener('pointermove', e=>{
-  if(!drawingActive || !drawing) return;
-  ctx.strokeStyle=drawColor;
-  ctx.lineWidth=3;
-  ctx.lineCap='round';
-  ctx.beginPath();
-  ctx.moveTo(lastX,lastY);
-  ctx.lineTo(e.offsetX,e.offsetY);
-  ctx.stroke();
-  [lastX,lastY]=[e.offsetX,e.offsetY];
-});
-
-function setColor(c){ drawColor=c; }
-function clearCanvas(){ ctx.clearRect(0,0,drawCanvas.width,drawCanvas.height); }
-
-document.getElementById('toggleDraw').onclick=()=>toggleDraw();
-
-function toggleDraw(){
-  drawingActive=!drawingActive;
-  const tools=document.getElementById('tools');
-  if(drawingActive){
-    drawCanvas.style.pointerEvents='auto';
-    tools.style.display='flex';
-    statusEl.textContent="Annotation mode";
-  } else {
-    drawCanvas.style.pointerEvents='none';
-    tools.style.display='none';
-    statusEl.textContent="Ready";
+function giveXP(team, x){
+  team.xp += x;
+  while(team.xp >= team.next){
+    team.xp -= team.next;
+    team.level++;
+    team.maxHp += 10;
+    team.hp = Math.min(team.maxHp, team.hp + 10);
+    team.next = rand(24 + team.level*2, 45 + team.level*3);
+    pushLog(`${team.name} leveled up to Lv ${team.level}!`);
   }
 }
+
+/* --- Stage animation helpers --- */
+function sleep(ms){return new Promise(res=>setTimeout(res,ms));}
+
+async function runStage(attacker, defender, label, dmg){
+  stage.classList.add('show');
+  attSprite.textContent = attacker.emoji;
+  defSprite.textContent = defender.emoji;
+
+  // reset positions
+  attSprite.classList.remove('in'); defSprite.classList.remove('in');
+  impact.classList.remove('show');
+  await sleep(20);
+  attSprite.classList.add('in'); defSprite.classList.add('in');
+  await sleep(460);
+
+  // choose an effect: projectile or slash
+  if(label==='MISS'){
+    // quick whoosh past
+    slashFX(attSprite, defSprite, true);
+  }else{
+    if(Math.random()<0.5) projectileFX(attSprite, defSprite); else slashFX(attSprite, defSprite,false);
+    await sleep(280);
+    // impact flash
+    impact.classList.add('show');
+    // defender shake
+    shake(defSprite.parentElement);
+    await sleep(520);
+    impact.classList.remove('show');
+  }
+  await sleep(120);
+  stage.classList.remove('show');
+}
+
+function pos(el){ const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; }
+function projectileFX(fromEl, toEl){
+  const a = pos(fromEl), b = pos(toEl);
+  const p = document.createElement('div'); p.className='projectile';
+  document.body.appendChild(p);
+  p.style.left = (a.x-9)+'px'; p.style.top = (a.y-9)+'px';
+  p.animate([{transform:'scale(.6)',opacity:.8, left:(a.x-9)+'px', top:(a.y-9)+'px'},
+             {transform:'scale(1.2)',opacity:.95,left:(b.x-9)+'px', top:(b.y-9)+'px'}],
+             {duration:280, easing:'cubic-bezier(.2,.6,.2,1)'}).onfinish=()=>p.remove();
+}
+function slashFX(fromEl, toEl, miss){
+  const a=pos(fromEl), b=pos(toEl);
+  const s=document.createElement('div'); s.className='slash';
+  s.style.left=(miss? (b.x+40):(b.x-60))+'px';
+  s.style.top=(b.y+(miss? -40:0))+'px';
+  document.body.appendChild(s);
+  s.animate([{opacity:0, transform:'scaleX(.4) rotate(12deg)'},{opacity:1, transform:'scaleX(1) rotate(0deg)'}],{duration:200})
+   .onfinish=()=>s.remove();
+}
+function shake(container){
+  const ani=[{transform:'translate(0,0)'},{transform:'translate(-4px,0)'},{transform:'translate(4px,0)'},{transform:'translate(0,0)'}];
+  document.getElementById('arena').animate(ani,{duration:220,iterations:1});
+}
+
+/* ============== UTILS ============== */
+function rand(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function randomXP(){ const r=Math.random(); if(r<0.05) return 7; if(r<0.30) return 3; return 1; }
+
+/* ============== ANNOTATION LAYER ============== */
+const drawCanvas = document.getElementById('drawCanvas');
+const dctx = drawCanvas.getContext('2d');
+let drawing=false, lx=0, ly=0, dcolor='red', drawingOn=false;
+function resizeCanvas(){ drawCanvas.width=window.innerWidth; drawCanvas.height=window.innerHeight; }
+window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+drawCanvas.addEventListener('pointerdown', e=>{ if(!drawingOn) return; drawing=true; [lx,ly]=[e.offsetX,e.offsetY]; });
+drawCanvas.addEventListener('pointerup', ()=>drawing=false);
+drawCanvas.addEventListener('pointerout', ()=>drawing=false);
+drawCanvas.addEventListener('pointermove', e=>{
+  if(!drawingOn||!drawing) return;
+  dctx.strokeStyle=dcolor; dctx.lineWidth=3; dctx.lineCap='round';
+  dctx.beginPath(); dctx.moveTo(lx,ly); dctx.lineTo(e.offsetX,e.offsetY); dctx.stroke();
+  [lx,ly]=[e.offsetX,e.offsetY];
+});
+
+document.getElementById('drawToggle').onclick=toggleDraw;
+function toggleDraw(){
+  drawingOn=!drawingOn;
+  document.getElementById('tools').style.display = drawingOn? 'flex':'none';
+  drawCanvas.style.pointerEvents = drawingOn? 'auto':'none';
+  statusEl.textContent = drawingOn? 'Annotation mode':'Ready';
+}
+function setColor(c){ dcolor=c; }
+function clearCanvas(){ dctx.clearRect(0,0,drawCanvas.width,drawCanvas.height); }
 </script>
 </body>
 </html>
