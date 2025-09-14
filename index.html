@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Table Group RPG</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="RPG">
+<style>
+  body {
+    margin:0;
+    font-family: -apple-system, Inter, Roboto, Arial, sans-serif;
+    background:#0b1220;
+    color:#e5e7eb;
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    overflow:hidden;
+  }
+  header, footer {padding:8px;background:#111827;display:flex;justify-content:space-between;align-items:center;}
+  h1 {font-size:18px;margin:0;}
+  button {padding:6px 10px;border:none;border-radius:6px;cursor:pointer;}
+  button.attack {background:#2563eb;color:white;}
+  .teams {flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px;padding:8px;}
+  .team {
+    background:#1f2937;border:1px solid #374151;border-radius:10px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:8px;position:relative;
+  }
+  .team .name {font-size:20px;font-weight:bold;margin-bottom:4px;}
+  .team .hp {font-size:16px;}
+  .team .xp {font-size:14px;color:#9ca3af;}
+  .log {height:80px;overflow:auto;font-size:12px;background:#111827;padding:4px;}
+  .overlay {position:fixed;inset:0;background:rgba(0,0,0,.7);
+    display:none;align-items:center;justify-content:center;z-index:100;}
+  .overlay.show {display:flex;}
+  .flash {background:#1f2937;padding:20px;border-radius:12px;text-align:center;max-width:80%;}
+  .flash h2 {margin:0;font-size:28px;}
+  .flash p {margin:8px 0 0;font-size:16px;}
+  #drawCanvas {
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    z-index:200;pointer-events:none; /* off by default */
+  }
+  #tools {position:fixed;bottom:90px;right:10px;z-index:300;
+    background:rgba(17,24,39,.8);padding:6px;border-radius:8px;display:flex;gap:4px;}
+  #tools button {font-size:12px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>Table Group RPG</h1>
+  <button id="newGame">New Game</button>
+</header>
+
+<div class="teams" id="teams"></div>
+
+<footer>
+  <div>Status: <span id="status">Ready</span></div>
+  <button id="toggleDraw">✏️ Draw</button>
+</footer>
+
+<div class="log" id="log"></div>
+
+<div class="overlay" id="overlay">
+  <div class="flash">
+    <h2 id="flashTitle">Attack!</h2>
+    <p id="flashText">Damage: 5</p>
+    <p style="font-size:12px;color:#9ca3af;">Tap to continue</p>
+  </div>
+</div>
+
+<canvas id="drawCanvas"></canvas>
+<div id="tools" style="display:none;">
+  <button onclick="setColor('black')">Black</button>
+  <button onclick="setColor('red')">Red</button>
+  <button onclick="setColor('blue')">Blue</button>
+  <button onclick="clearCanvas()">Clear</button>
+  <button onclick="toggleDraw()">Done</button>
+</div>
+
+<script>
+/* ==== Game State ==== */
+const KEY = "table_rpg_state_v1";
+const overlay = document.getElementById("overlay");
+const flashTitle = document.getElementById("flashTitle");
+const flashText = document.getElementById("flashText");
+const teamsEl = document.getElementById("teams");
+const statusEl = document.getElementById("status");
+const logEl = document.getElementById("log");
+
+let state = load() || {
+  teams: [
+    {id:"g1", name:"Lions 🦁", hp:50, maxHp:50, xp:0},
+    {id:"g2", name:"Bears 🐻", hp:50, maxHp:50, xp:0},
+    {id:"g3", name:"Wolves 🐺", hp:50, maxHp:50, xp:0},
+    {id:"g4", name:"Eagles 🦅", hp:50, maxHp:50, xp:0},
+  ],
+  log:[]
+};
+
+render();
+
+document.getElementById("newGame").onclick = ()=>{
+  if (!confirm("Start a new game?")) return;
+  state.teams.forEach(t=>{t.hp=50; t.xp=0;});
+  state.log=[];
+  save(); render();
+};
+
+function render(){
+  teamsEl.innerHTML="";
+  state.teams.forEach(t=>{
+    const div=document.createElement("div");
+    div.className="team";
+    div.id=t.id;
+    div.innerHTML=`<div class="name">${t.name}</div>
+      <div class="hp">HP: ${t.hp}/${t.maxHp}</div>
+      <div class="xp">XP: ${t.xp}</div>
+      <button class="attack">Attack</button>`;
+    div.querySelector("button").onclick=()=>chooseTarget(t);
+    teamsEl.appendChild(div);
+  });
+  renderLog();
+}
+
+function chooseTarget(attacker){
+  statusEl.textContent = `${attacker.name} - choose a target`;
+  Array.from(document.querySelectorAll(".team")).forEach(el=>{
+    el.onclick=()=>{
+      const defender=state.teams.find(tt=>tt.id===el.id);
+      if(defender.id===attacker.id){statusEl.textContent="Can't target self"; return;}
+      performAttack(attacker,defender);
+    };
+  });
+}
+
+function performAttack(attacker, defender){
+  let dmg=0, label="MISS";
+  const r=Math.random();
+  if(r<0.2){dmg=0;label="MISS";}
+  else if(r<0.8){dmg=Math.floor(Math.random()*5)+2;label="HIT";}
+  else {dmg=Math.floor(Math.random()*10)+10;label="DEVASTATING";}
+  defender.hp=Math.max(0,defender.hp-dmg);
+  attacker.xp+=2; defender.xp+=1;
+
+  queueOverlay(`${attacker.name} attacks ${defender.name}!`,`${label} • ${dmg} dmg`);
+  state.log.push(`${attacker.name} → ${defender.name}: ${label} ${dmg} dmg`);
+  save(); render();
+}
+
+function queueOverlay(title,text){
+  flashTitle.textContent=title;
+  flashText.textContent=text;
+  overlay.classList.add("show");
+}
+overlay.onclick=()=>overlay.classList.remove("show");
+
+function renderLog(){
+  logEl.innerHTML=state.log.slice(-20).map(x=>`<div>${x}</div>`).join("");
+  logEl.scrollTop=logEl.scrollHeight;
+}
+
+function save(){localStorage.setItem(KEY, JSON.stringify(state));}
+function load(){try{return JSON.parse(localStorage.getItem(KEY));}catch(e){return null;}}
+
+/* ==== Drawing Layer ==== */
+const drawCanvas = document.getElementById('drawCanvas');
+const ctx = drawCanvas.getContext('2d');
+resize();
+
+let drawing=false, lastX=0, lastY=0;
+let drawColor='red';
+let drawingActive=false;
+
+function resize(){
+  drawCanvas.width = window.innerWidth;
+  drawCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+
+drawCanvas.addEventListener('pointerdown', e=>{
+  if(!drawingActive) return;
+  drawing=true; [lastX,lastY]=[e.offsetX,e.offsetY];
+});
+drawCanvas.addEventListener('pointerup', ()=> drawing=false);
+drawCanvas.addEventListener('pointerout', ()=> drawing=false);
+drawCanvas.addEventListener('pointermove', e=>{
+  if(!drawingActive || !drawing) return;
+  ctx.strokeStyle=drawColor;
+  ctx.lineWidth=3;
+  ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(lastX,lastY);
+  ctx.lineTo(e.offsetX,e.offsetY);
+  ctx.stroke();
+  [lastX,lastY]=[e.offsetX,e.offsetY];
+});
+
+function setColor(c){ drawColor=c; }
+function clearCanvas(){ ctx.clearRect(0,0,drawCanvas.width,drawCanvas.height); }
+
+document.getElementById('toggleDraw').onclick=()=>toggleDraw();
+
+function toggleDraw(){
+  drawingActive=!drawingActive;
+  const tools=document.getElementById('tools');
+  if(drawingActive){
+    drawCanvas.style.pointerEvents='auto';
+    tools.style.display='flex';
+    statusEl.textContent="Annotation mode";
+  } else {
+    drawCanvas.style.pointerEvents='none';
+    tools.style.display='none';
+    statusEl.textContent="Ready";
+  }
+}
+</script>
+</body>
+</html>
