@@ -3,73 +3,117 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Class RPG — Ghibli Chibi</title>
+<title>Class RPG — Pixel Battle</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="RPG">
 <style>
 :root{
   --bg:#0b1220;--panel:#0f172a;--panel2:#111a2e;--text:#e5e7eb;--muted:#9ca3af;
-  --primary:#3b82f6;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444;--border:#1f2937;
+  --primary:#3b82f6;--border:#1f2937;
 }
-*{box-sizing:border-box} html,body{height:100%}
+*{box-sizing:border-box}
+html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Inter,Roboto,Arial,sans-serif;
      display:grid;grid-template-rows:auto 1fr auto auto;gap:10px;overflow:hidden}
 header,footer{background:var(--panel);border-bottom:1px solid var(--border);padding:10px 12px;display:flex;align-items:center;justify-content:space-between}
-h1{margin:0;font-size:20px}.status{font-size:14px;color:var(--muted)}
+h1{margin:0;font-size:20px}
+.status{font-size:14px;color:var(--muted)}
 button{border:none;padding:9px 12px;border-radius:12px;background:#334155;color:#fff;font-size:16px}
-.primary{background:var(--primary)} .disabled{opacity:.6;pointer-events:none}
+.primary{background:var(--primary)}
+.disabled{opacity:.6;pointer-events:none}
+
 .grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px;padding:12px}
 .card{background:var(--panel2);border:1px solid var(--border);border-radius:16px;padding:12px;
-      display:grid;grid-template-columns:150px 1fr;gap:12px;transition:transform .25s,outline .2s}
-.card.shrink{transform:scale(.92)} .card.targetable{outline:2px solid #7dd3fc}
-.avatar{width:150px;height:150px;border-radius:14px;background:#0b1229;border:1px solid #22314f;display:flex;align-items:center;justify-content:center}
+      display:grid;grid-template-columns:160px 1fr;gap:12px;transition:transform .25s,outline .2s}
+.card.shrink{transform:scale(.92)}
+.card.targetable{outline:2px solid #7dd3fc}
+.avatar{width:160px;height:160px;border-radius:14px;background:#0b1229;border:1px solid #22314f;display:flex;align-items:center;justify-content:center}
 .name{font-weight:900;font-size:22px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.hp{font-size:17px}
-.bar{height:18px;border-radius:12px;background:#0b1229;border:1px solid #1f274f;overflow:hidden;flex:1}
+.pill{padding:5px 10px;border-radius:999px;background:#0e162b;border:1px solid #1f274f;color:#cbd5e1;font-size:12px}
+
+.bar{height:20px;border-radius:12px;background:#0b1229;border:1px solid #1f274f;overflow:hidden;flex:1}
 .fill{height:100%;width:0}
 .xpfill{background:linear-gradient(90deg,#93c5fd,#3b82f6)}
-.powfill{background:linear-gradient(90deg,#fda4af,#ef4444)}
+.powfill{background:linear-gradient(90deg,#fca5a5,#ef4444)}
 .shieldfill{background:linear-gradient(90deg,#c7d2fe,#60a5fa)}
-.pill{padding:5px 10px;border-radius:999px;background:#0e162b;border:1px solid #1f274f;color:#cbd5e1;font-size:12px}
+
 .bag{display:flex;gap:8px;flex-wrap:wrap;min-height:30px}
 .bagItem{display:flex;gap:6px;align-items:center;border:1px dashed #475569;background:#0d162c;padding:6px 10px;border-radius:10px;font-size:14px}
 .empty{color:#94a3b8;font-size:13px}
 .money .btn{padding:5px 9px;border-radius:10px;background:#1f2937}
-.attackBtn.pressed{animation:pulse .7s ease}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(59,130,246,.8)}100%{box-shadow:0 0 0 22px rgba(59,130,246,0)}}
+
 .store{padding:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--panel);border-top:1px solid var(--border)}
 .sitem{display:flex;gap:10px;align-items:center;border:1px dashed #3652a1;background:#0e1736;padding:10px 12px;border-radius:12px;font-size:16px}
 .sitem.selected{outline:2px solid #7dd3fc}
-.log{height:110px;overflow:auto;background:var(--panel);border-top:1px solid var(--border);padding:10px;font-size:14px;color:#cbd5e1}
 
-/* Battle stage */
+.log{height:120px;overflow:auto;background:var(--panel);border-top:1px solid var(--border);padding:10px;font-size:14px;color:#cbd5e1}
+
+/* ===== Battle Stage ===== */
 .stage{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:80}
 .stage.show{display:flex}
-.arena{width:min(900px,96vw);height:min(520px,68vh);
-       background:radial-gradient(circle at 50% 70%, #203a5f 0%, #0b1220 55%, #07101d 100%);
-       border:1px solid #1f274f;border-radius:18px;position:relative;overflow:hidden}
-.ground{position:absolute;left:0;right:0;bottom:0;height:42%;background:linear-gradient(#0d1b2f,#0a1322)}
-.actor{position:absolute;width:160px;height:160px}
-.actor.att{left:-190px;bottom:60px}
-.actor.def{right:-190px;top:60px}
-.actor.in{transition:transform .45s ease,left .45s ease,right .45s ease}
-.att.in{left:40px}.def.in{right:40px}
-.impact{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);font-size:64px;opacity:0}
-.impact.show{animation:boom .55s ease}
-@keyframes boom{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}60%{opacity:1;transform:translate(-50%,-50%) scale(1.25)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
-.projectile{position:absolute;width:20px;height:20px;border-radius:50%;background:#60a5fa;box-shadow:0 0 16px #60a5fa;opacity:.95}
-.slash{position:absolute;width:150px;height:8px;background:linear-gradient(90deg,#fff,#93c5fd);border-radius:999px;box-shadow:0 0 14px #93c5fd;opacity:.96}
-.narr{position:absolute;left:0;right:0;bottom:0;padding:14px;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);
+.arena{
+  width:min(960px,96vw);height:min(560px,70vh);position:relative;overflow:hidden;
+  border:1px solid #1f274f;border-radius:18px;
+  image-rendering:pixelated;
+  background:
+    linear-gradient(#87b5ff,#67a0ff 60%, #4b7fd1 61%, #4b7fd1 100%); /* sky */
+}
+.field{
+  position:absolute;left:0;right:0;bottom:0;height:48%;
+  background:
+    repeating-linear-gradient(0deg, #3f7a2e 0 6px, #2f5e23 6px 12px), /* stripes */
+    linear-gradient(#2a5a1f,#1f4618);
+  image-rendering:pixelated;
+}
+.actor{position:absolute;width:170px;height:170px;image-rendering:pixelated}
+.actor.att{left:-220px;bottom:70px}
+.actor.def{right:-220px;top:70px}
+.actor.in{transition:left .6s ease,right .6s ease, transform .2s ease}
+
+.sprite{width:170px;height:170px}
+
+/* Status FX on sprites */
+.poisoned{filter:hue-rotate(85deg) saturate(1.2) brightness(1.1)}
+.charged{filter:drop-shadow(0 0 8px #ff9c3c) drop-shadow(0 0 16px #ff7733)}
+.flame::after{
+  content:"";position:absolute;left:50%;top:50%;width:70px;height:70px;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,#ffd089 0,#ff7a00 40%, rgba(255,122,0,0) 70%);border-radius:50%;
+  mix-blend-mode:screen;animation:flamer 1s ease-in-out infinite
+}
+@keyframes flamer{0%{transform:translate(-50%,-50%) scale(.9)}50%{transform:translate(-50%,-50%) scale(1.1)}100%{transform:translate(-50%,-50%) scale(.9)}}
+
+/* Shield UI */
+.shieldIcon{position:absolute;width:90px;height:90px;left:calc(50% - 45px);top:calc(50% - 45px);opacity:.0;transform:scale(.8)}
+.shieldIcon.show{opacity:.9;transition:opacity .2s}
+.shieldCrack{position:absolute;inset:0;pointer-events:none;display:none}
+.shieldCrack.show{display:block;animation:crack .4s ease}
+@keyframes crack{0%{opacity:0}50%{opacity:1}100%{opacity:0}}
+
+/* Stage HP panel */
+.stageHUD{
+  position:absolute;left:50%;transform:translateX(-50%);top:8px;background:rgba(0,0,0,.45);
+  border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(4px);padding:8px 12px;border-radius:10px;min-width:70%;
+  display:flex;gap:10px;align-items:center;justify-content:space-between
+}
+.stageHP{flex:1;height:24px;background:#0e1b30;border:1px solid #1f274f;border-radius:12px;overflow:hidden;transform-origin:center}
+.stageHP .fill{height:100%;transition:width .7s ease}
+.hpPop{position:absolute;color:#fff;font-weight:800;text-shadow:0 2px 0 rgba(0,0,0,.4)}
+.popDmg{color:#ffb0b0}
+.popXP{color:#a6c8ff}
+.popPoison{color:#b1ffb1}
+
+/* Narration bottom strip (single result line) */
+.narr{position:absolute;left:0;right:0;bottom:0;padding:14px;background:rgba(0,0,0,.45);
       border-top:1px solid rgba(255,255,255,.08);font-size:18px;text-align:center}
 .narr .hint{font-size:12px;color:#cbd5e1}
 
-/* Chibi “Ghibli-ish” SVG bits */
-.chibi .arm{transform-origin:20px 20px}
-.chibi.wave .arm-l{animation:armwave .45s ease-in-out 2}
-.chibi.strike .arm-r{animation:armstrike .28s ease-in-out 1}
-@keyframes armwave{0%{transform:rotate(0)}50%{transform:rotate(-22deg)}100%{transform:rotate(0)}}
-@keyframes armstrike{0%{transform:rotate(0)}70%{transform:rotate(50deg)}100%{transform:rotate(0)}}
+/* Motion helpers */
+@keyframes rush { 0%{transform:translateX(0)} 50%{transform:translateX(160px)} 100%{transform:translateX(0)} }
+@keyframes rushBig { 0%{transform:translateX(0) scale(1.05)} 50%{transform:translateX(230px) scale(1.1)} 100%{transform:translateX(0) scale(1)} }
+@keyframes dodgeL { 0%{transform:translateX(0)} 40%{transform:translateX(-40px)} 100%{transform:translateX(0)} }
+@keyframes dodgeR { 0%{transform:translateX(0)} 40%{transform:translateX(40px)} 100%{transform:translateX(0)} }
+@keyframes shake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-4px,0)} 75%{transform:translate(4px,0)} }
 
 /* Annotation */
 #drawCanvas{position:fixed;inset:0;z-index:120;pointer-events:none}
@@ -79,7 +123,7 @@ button{border:none;padding:9px 12px;border-radius:12px;background:#334155;color:
 </head>
 <body>
 <header>
-  <h1>Class RPG — Ghibli Chibi</h1>
+  <h1>Class RPG — Pixel Battle</h1>
   <div class="status">Status: <span id="status">Ready</span></div>
   <div style="display:flex;gap:8px">
     <button id="drawToggle">✏️ Draw</button>
@@ -90,15 +134,30 @@ button{border:none;padding:9px 12px;border-radius:12px;background:#334155;color:
 <main class="grid" id="grid"></main>
 
 <footer class="store" id="store"><strong>Store:</strong></footer>
+
 <div class="log" id="log"></div>
 
 <!-- Battle stage -->
 <div class="stage" id="stage" aria-hidden="true">
   <div class="arena" id="arena">
-    <div class="ground"></div>
-    <div class="actor att" id="attSprite"></div>
-    <div class="actor def" id="defSprite"></div>
-    <div class="impact" id="impact">✧</div>
+    <div class="field"></div>
+
+    <div class="stageHUD">
+      <div id="hudNames">Attacker → Defender</div>
+      <div class="stageHP" id="stageHP"><div class="fill" id="stageHPFill" style="width:100%;background:linear-gradient(90deg,#22c55e,#16a34a)"></div></div>
+      <div id="shieldHUD" style="min-width:110px;text-align:right;"></div>
+    </div>
+
+    <div class="actor att" id="attActor"><div class="sprite" id="attSprite"></div></div>
+    <div class="actor def" id="defActor"><div class="sprite" id="defSprite"></div>
+      <svg class="shieldIcon" id="shieldIcon" viewBox="0 0 100 100">
+        <path d="M50 8 L88 24 V52 C88 72 70 86 50 92 C30 86 12 72 12 52 V24 Z" fill="#7fb0ff" stroke="#193d7a" stroke-width="4"/>
+      </svg>
+      <svg class="shieldCrack" id="shieldCrack" viewBox="0 0 100 100">
+        <path d="M35 10 L60 40 L45 70 L70 90" stroke="#fff" stroke-width="5" fill="none"/>
+      </svg>
+    </div>
+
     <div class="narr" id="narr"><div id="nText">.</div><div class="hint">Tap to continue</div></div>
   </div>
 </div>
@@ -114,8 +173,8 @@ button{border:none;padding:9px 12px;border-radius:12px;background:#334155;color:
 </div>
 
 <script>
-/* ================= STATE / SAVE ================= */
-const KEY="rpg_ghibli_v3";
+/* ================== STATE / SAVE ================== */
+const KEY="rpg_pixel_v1";
 const PRICES={potion:5, shield:8, poison:7};
 const ITEMS=[
   {id:'potion', name:'Potion +10', emoji:'🧪', desc:'Heals 10 & cures poison', cost:PRICES.potion},
@@ -124,7 +183,7 @@ const ITEMS=[
 ];
 
 let state = load() || {
-  teams:[ mk('g1','Lions','forest'), mk('g2','Bears','samurai'), mk('g3','Wolves','ninja'), mk('g4','Eagles','spirit') ],
+  teams:[ mk('g1','Lions','fox'), mk('g2','Bears','bear'), mk('g3','Wolves','wolf'), mk('g4','Eagles','eagle') ],
   log:[],
   storeSelect:null
 };
@@ -134,7 +193,7 @@ function mk(id,name,style){return{ id,name,style, hp:50,maxHp:50, xp:0, next:ran
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 function load(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
 
-/* ================ RENDER ================== */
+/* ================== RENDER LIST ================== */
 const grid=$('#grid'), logEl=$('#log'), statusEl=$('#status'), storeEl=$('#store');
 $('#newGame').onclick=()=>{ if(!confirm('Reset HP/XP/Items/Money?')) return;
   state.teams.forEach(t=>{ t.hp=50;t.maxHp=50;t.xp=0;t.level=1;t.money=0;t.power=0;
@@ -151,30 +210,39 @@ function render(){
 
 function card(t){
   const c=E('div','card'); c.dataset.id=t.id;
-  const av=E('div','avatar'); av.innerHTML=chibi(t.style);
+
+  const av=E('div','avatar');
+  av.innerHTML = pixelChibi(t.style, t.flags.poisoned, t.power>=100);
   const m=E('div');
-  const name=E('div','name',t.name);
-  const badges=E('div','row');
+
+  // Editable name
+  const nameRow=row();
+  const nameInput=document.createElement('input');
+  nameInput.value=t.name; nameInput.style.fontSize='20px'; nameInput.style.width='180px';
+  nameInput.style.border='1px solid #1f274f'; nameInput.style.background='#0f172a'; nameInput.style.color='var(--text)';
+  nameInput.style.borderRadius='8px'; nameInput.style.padding='6px 8px';
+  nameInput.onchange=()=>{t.name=nameInput.value.trim()||t.name; save(); render();};
+  nameRow.append(E('div','name',''), nameInput);
+
+  const badges=row();
   badges.append(P('Lv '+t.level),
     P(t.flags.poisoned?'Poisoned':'Healthy', t.flags.poisoned?'#84cc16':'#94a3b8'),
     P('Shield '+t.flags.shieldPoints,'#93c5fd'));
-  const r1=row(name,badges);
 
-  const hpTxt=E('div','hp',`HP: ${t.hp}/${t.maxHp}`);
-  const hpBar=barHP(t.hp/t.maxHp);
-  const r2=row(hpTxt,hpBar);
+  // HP bar with gradient by % (list view)
+  const hpPct=t.hp/t.maxHp;
+  const hpBar=barHP(hpPct);
 
+  // Actions
   const act=row();
   const atkB=btn('Attack','primary attackBtn',()=>beginAttack(t,atkB));
   const xpB=btn('+XP','',()=>{gainXP(t, randXP()); save(); render();});
   act.append(atkB,xpB);
 
+  // XP/Power/Shield list bars
   const xpBar=barPct((t.xp/t.next)*100,'xpfill');
-  const r3=row(P('XP'),xpBar);
   const powBar=barPct(t.power,'powfill');
-  const r4=row(P('Attack Power'),powBar);
   const shBar=barPct(Math.min(100,t.flags.shieldPoints*10),'shieldfill');
-  const r5=row(P('Shield'),shBar);
 
   const money=row(); money.innerHTML=`Money: <strong>$${t.money}</strong>`;
   money.append(btn('+1','btn',()=>{t.money+=1;save();render();}),
@@ -188,13 +256,13 @@ function card(t){
   if(t.pack.poison>0){ bag.append(bagItem('🏹',`x${t.pack.poison}`,()=>beginPoison(t))); k++; }
   if(!k) bag.append(E('div','empty','Backpack empty'));
 
-  m.append(r1,r2,act,r3,r4,r5,money,bag);
+  m.append(nameRow,badges,row(E('div',null,`HP: ${t.hp}/${t.maxHp}`),hpBar),act,row(P('XP'),xpBar),row(P('Attack Power'),powBar),row(P('Shield'),shBar),money,bag);
   c.append(av,m);
   return c;
 }
 
-function row(...kids){const d=E('div','row');kids.forEach(k=>d.append(k));return d;}
 function P(t,color){const s=E('span','pill',t); if(color){s.style.borderColor=color;s.style.color=color;} return s;}
+function row(...kids){const d=E('div','row');kids.forEach(k=>d.append(k));return d;}
 function barPct(p,cls){const b=E('div','bar');const f=E('div','fill '+cls);f.style.width=Math.max(0,Math.min(100,p))+'%';b.append(f);return b;}
 function barHP(p){const b=E('div','bar');const f=E('div','fill');const pct=Math.max(0,Math.min(100,p*100));f.style.width=pct+'%';
   f.style.background= pct<30? 'linear-gradient(90deg,#f87171,#ef4444)'
@@ -204,9 +272,10 @@ function barHP(p){const b=E('div','bar');const f=E('div','fill');const pct=Math.
 function btn(t,cls,fn){const b=E('button',cls,t);b.onclick=fn;return b;}
 function bagItem(e,l,fn){const d=E('div','bagItem');d.innerHTML=`<span>${e}</span><span>${l}</span>`;d.onclick=fn;return d;}
 function E(tag,cls,txt){const d=document.createElement(tag);if(cls)d.className=cls;if(txt!=null)d.textContent=txt;return d;}
-function $(sel){return document.querySelector(sel);}
+function $(s){return document.querySelector(s);}
+function $all(s){return Array.from(document.querySelectorAll(s));}
 
-/* ================ STORE ================== */
+/* ================== STORE ================== */
 function buildStore(){
   storeEl.innerHTML='<strong>Store:</strong> ';
   ITEMS.forEach(it=>{
@@ -231,15 +300,17 @@ function buy(team,itemId){
   save(); render();
 }
 
-/* ================ ITEMS ================== */
+/* ================== ITEMS ================== */
 function usePotion(t){
   if(t.pack.potion<=0)return;
   t.pack.potion--; const before=t.hp; t.hp=Math.min(t.maxHp,t.hp+10); t.flags.poisoned=false;
+  floatPopTeam(t.id, `+${t.hp-before}`, 'popXP');
   logNow(`${t.name} used Potion (+${t.hp-before}, cured).`); save(); render();
 }
 function useShield(t){
   if(t.pack.shield<=0)return;
   t.pack.shield--; t.flags.shieldPoints=(t.flags.shieldPoints||0)+10;
+  floatPopTeam(t.id, `+Shield 10`, 'popXP');
   logNow(`${t.name} raised Shield (+10).`); save(); render();
 }
 function beginPoison(user){
@@ -250,7 +321,7 @@ function beginPoison(user){
   shrinkExcept(user.id,true);
 }
 
-/* ================ ATTACK FLOW (fixed) ================= */
+/* ================== ATTACK FLOW ================== */
 let mode='idle', attacker=null;
 function setMode(m){mode=m;}
 function beginAttack(user, btnEl){
@@ -269,20 +340,19 @@ grid.addEventListener('click', e=>{
   }
   if(mode==='poisonTarget' && attacker && team.id!==attacker.id){
     unshrink(); highlightTargets('none'); setMode('battle');
-    runStage(attacker,team,[
-      `${attacker.name} nocks a shimmering arrow…`,
-      `The arrow streaks across the arena!`,
-      `${team.name} is now POISONED! (−1 each turn)`
-    ],{effect:'projectile',damage:0}).then(()=>{
-      attacker.pack.poison--; team.flags.poisoned=true; logNow(`${attacker.name} poisoned ${team.name}.`);
-      attacker=null; setMode('idle'); save(); render();
-    });
+    runStage(attacker,team,`Poisoned! ${team.name} will take −1 each turn.`, {effect:'projectile',damage:0,poison:true})
+      .then(()=>{
+        attacker.pack.poison--; team.flags.poisoned=true; floatPopTeam(team.id,'−1 (poison start)','popPoison');
+        logNow(`${attacker.name} poisoned ${team.name}.`); attacker=null; setMode('idle'); save(); render();
+      });
   }
 });
 
+/* ================== BATTLE ================== */
 function runBattle(att,def){
   lockButtons(true);
-  // poison tick for all
+
+  // poison tick for all (visual flash on stage will happen below if def poisoned)
   state.teams.forEach(t=>{ if(t.flags.poisoned && t.hp>0) t.hp=Math.max(0,t.hp-1); });
 
   // damage roll
@@ -291,108 +361,246 @@ function runBattle(att,def){
   // power
   const usePow=Math.min(att.power,40);
   if(usePow>0){ const mult=1+(usePow/50); dmg=Math.round(dmg*mult); att.power=Math.max(0,att.power-usePow); label+=' ×Power'; }
+
   // shield
+  let blocked=0;
   if(dmg>0 && def.flags.shieldPoints>0){
-    const block=Math.max(1, Math.floor(Math.random()*Math.min(10,def.flags.shieldPoints)));
-    def.flags.shieldPoints=Math.max(0,def.flags.shieldPoints-block);
-    dmg=Math.max(0,dmg-block); logNow(`${def.name}'s shield blocks ${block}.`);
+    blocked=Math.max(1, Math.floor(Math.random()*Math.min(10,def.flags.shieldPoints)));
+    def.flags.shieldPoints=Math.max(0,def.flags.shieldPoints-blocked);
+    dmg=Math.max(0,dmg-blocked);
   }
 
-  const lines=[ `${att.name} steps in and winds up…`,
-                (label==='MISS'?'The strike whiffs!':'A clean hit lands!'),
-                `${def.name} ${label==='MISS'?'takes no damage.':`takes ${dmg} damage.`}` ];
+  const resultText = (label.startsWith('MISS'))
+    ? `${att.name} missed — ${def.name} dodged!`
+    : `${att.name} hit ${def.name} for ${dmg}${blocked?` (blocked ${blocked})`:''}.`;
 
-  runStage(att,def,lines,{effect:(Math.random()<.5?'slash':'projectile'),damage:dmg})
+  runStage(att,def,resultText,{effect: (label==='MISS'?'miss':'hit'), damage:dmg, blocked, poisoned:def.flags.poisoned})
     .then(()=>{
-      const before=def.hp; def.hp=Math.max(0,def.hp-dmg); const dealt=before-def.hp;
+      const before=def.hp; def.hp=Math.max(0, def.hp-dmg); const dealt=before-def.hp;
       def.power=Math.min(100, def.power + (dealt>0?22:10));
       let atkXP=dealt>0? 1+Math.floor(dealt/3) : 1; if(Math.random()<.15) atkXP+=2;
       let defXP=1; gainXP(att,atkXP); gainXP(def,defXP);
-      logNow(`${att.name} → ${def.name}: ${label} for ${dealt}. XP: ${att.name}+${atkXP}, ${def.name}+${defXP}`);
+
+      floatPopTeam(def.id, dealt?`−${dealt}`:'0', dealt? 'popDmg':'popXP');
+      floatPopTeam(att.id, `+${atkXP} XP`, 'popXP');
+      floatPopTeam(def.id, `+${defXP} XP`, 'popXP');
+
+      logNow(`${att.name} → ${def.name}: ${label} for ${dealt}${blocked?` (blocked ${blocked})`:''}. XP: ${att.name}+${atkXP}, ${def.name}+${defXP}`);
+
       attacker=null; setMode('idle'); lockButtons(false); save(); render();
     });
 }
 
+/* ================== STAGE / ANIMATIONS ================== */
+const stage=$('#stage'), attActor=$('#attActor'), defActor=$('#defActor'),
+      attSprite=$('#attSprite'), defSprite=$('#defSprite'),
+      shieldIcon=$('#shieldIcon'), shieldCrack=$('#shieldCrack'),
+      stageHP=$('#stageHP'), stageHPFill=$('#stageHPFill'),
+      hudNames=$('#hudNames'), shieldHUD=$('#shieldHUD'),
+      nText=$('#nText');
+
+function pixelChibi(kind, poisoned, charged){
+  // Tiny pixel critters (SVG rectangles). Different palettes per kind.
+  const P = {
+    fox:   {a:'#f9b97a',b:'#c9783a',c:'#5b3a21'},
+    bear:  {a:'#c9a07a',b:'#8a6b4b',c:'#4a3b2a'},
+    wolf:  {a:'#c0c7d1',b:'#8e98a3',c:'#4c5966'},
+    eagle: {a:'#e8e0b2',b:'#b7ab72',c:'#6b623f'},
+  }[kind]||{a:'#d0c0c0',b:'#a08080',c:'#604040'};
+  const tint = poisoned? ' filter="hue-rotate(85deg) saturate(1.2)"' : '';
+  return `
+  <svg viewBox="0 0 32 32" width="170" height="170" style="image-rendering:pixelated"${tint}>
+    <!-- body -->
+    <rect x="12" y="14" width="8" height="8" fill="${P.a}"/>
+    <rect x="10" y="22" width="12" height="6" fill="${P.a}"/>
+    <!-- head -->
+    <rect x="10" y="6" width="12" height="8" fill="${P.a}"/>
+    <rect x="9" y="5" width="4" height="3" fill="${P.b}"/><rect x="19" y="5" width="4" height="3" fill="${P.b}"/>
+    <!-- eyes -->
+    <rect x="12" y="9" width="2" height="2" fill="${P.c}"/><rect x="18" y="9" width="2" height="2" fill="${P.c}"/>
+    <!-- arms -->
+    <rect x="8" y="16" width="3" height="4" fill="${P.a}"/><rect x="21" y="16" width="3" height="4" fill="${P.a}"/>
+    <!-- legs -->
+    <rect x="12" y="28" width="3" height="3" fill="${P.b}"/><rect x="17" y="28" width="3" height="3" fill="${P.b}"/>
+  </svg>`;
+}
+
+async function runStage(att,def,resultLine,opts){
+  // Prep sprites/status
+  attSprite.innerHTML = pixelChibi(att.style, att.flags.poisoned, att.power>=100);
+  defSprite.innerHTML = pixelChibi(def.style, def.flags.poisoned, def.power>=100);
+
+  // charged aura
+  attActor.classList.toggle('charged', att.power>=100);
+  attActor.classList.toggle('flame', att.power>=100);
+
+  defActor.classList.remove('charged','flame');
+  if(def.power>=100){ defActor.classList.add('charged','flame'); }
+
+  // shield UI on stage
+  if(def.flags.shieldPoints>0){ shieldIcon.classList.add('show'); shieldHUD.textContent = `Shield: ${def.flags.shieldPoints}`; }
+  else { shieldIcon.classList.remove('show'); shieldHUD.textContent=''; }
+
+  // stage HUD text + HP bar start value
+  hudNames.textContent = `${att.name} → ${def.name}`;
+  const startPct = (def.hp/def.maxHp)*100;
+  stageHPFill.style.width = startPct + '%';
+  stageHPFill.style.background = hpGrad(startPct);
+
+  // show stage and slide in
+  stage.classList.add('show');
+  attActor.classList.remove('in'); defActor.classList.remove('in');
+  await sleep(20);
+  attActor.classList.add('in'); defActor.classList.add('in');
+  await sleep(600);
+
+  // optional poison flash on defender if poisoned (start-of-turn tick)
+  if(opts.poisoned){
+    flashTint(defActor, '#7CFC00');
+    floatPopAt(defActor, '-1', 'popPoison');
+    await sleep(300);
+  }
+
+  // animation: miss → defender dodge; hit/heavy/devastating → attacker rush
+  if(opts.effect==='miss'){
+    // defender dodge (random left/right)
+    const dir = Math.random()<.5? 'dodgeL':'dodgeR';
+    defActor.style.animation = (dir==='dodgeL'?'dodgeL':'dodgeR')+' .7s ease';
+    await sleep(700);
+    defActor.style.animation='';
+  } else {
+    // rush — stronger attacks push further
+    const rushAnim = (opts.damage>=14? 'rushBig':'rush');
+    attActor.style.animation = rushAnim+' .9s cubic-bezier(.2,.6,.2,1)';
+    await sleep(600);
+    if(opts.damage>0){ // impact
+      arenaShake();
+      flashTint(defActor, '#ffffff');
+      floatPopAt(defActor, `-${opts.damage}${opts.blocked?` (−${opts.blocked} blocked)`:''}`, 'popDmg');
+      // shield crack/break visuals
+      if(opts.blocked>0){
+        shieldCrack.classList.add('show');
+        await sleep(300);
+        shieldCrack.classList.remove('show');
+        if(state.teams.find(t=>t.id===def.id).flags.shieldPoints===0){
+          // broke
+          shieldIcon.classList.remove('show');
+          floatPopAt(defActor, 'Shield Broken!', 'popDmg');
+        } else {
+          shieldHUD.textContent = `Shield: ${state.teams.find(t=>t.id===def.id).flags.shieldPoints}`;
+        }
+      }
+    }
+    await sleep(300);
+    attActor.style.animation='';
+  }
+
+  // Big HP bar animate to new percent
+  const endPct = Math.max(0, Math.min(100, ((def.hp - opts.damage)/def.maxHp)*100 ));
+  // magnify during change
+  stageHP.style.animation = 'none'; // reset
+  void stageHP.offsetWidth;
+  stageHP.style.animation = 'shake .4s ease';
+  await sleep(80);
+  stageHPFill.style.width = endPct + '%';
+  stageHPFill.style.background = hpGrad(endPct);
+  await sleep(800);
+
+  // One-line result text, tap to continue
+  nText.textContent = resultLine;
+  await tapToAdvance();
+
+  stage.classList.remove('show');
+}
+
+function hpGrad(pct){
+  return (pct<30)? 'linear-gradient(90deg,#f87171,#ef4444)'
+       : (pct<60)? 'linear-gradient(90deg,#f59e0b,#b45309)'
+                 : 'linear-gradient(90deg,#22c55e,#16a34a)';
+}
+
+function flashTint(actor, color){
+  const o=document.createElement('div');
+  o.style.position='absolute';o.style.inset='0';o.style.background=color;o.style.opacity='.0';
+  o.style.mixBlendMode='screen';
+  actor.appendChild(o);
+  o.animate([{opacity:.0},{opacity:.5},{opacity:0}],{duration:280}).onfinish=()=>o.remove();
+}
+function arenaShake(){ $('#arena').animate([{transform:'translate(0,0)'},{transform:'translate(-4px,0)'},{transform:'translate(4px,0)'},{transform:'translate(0,0)'}],{duration:260}); }
+
+function floatPopAt(actor, text, cls){
+  const r=actor.getBoundingClientRect();
+  const sp=document.createElement('div'); sp.className='hpPop '+cls; sp.textContent=text;
+  sp.style.left=(r.left + r.width/2)+'px'; sp.style.top=(r.top + 10)+'px';
+  sp.style.position='fixed'; sp.style.fontSize='22px';
+  document.body.appendChild(sp);
+  sp.animate([{transform:'translate(-50%,0)', opacity:1},{transform:'translate(-50%,-30px)', opacity:0}],{duration:900,easing:'ease-out'})
+    .onfinish=()=>sp.remove();
+}
+function floatPopTeam(teamId, text, cls){
+  const card = $(`.card[data-id="${teamId}"]`);
+  if(!card) return; const r=card.getBoundingClientRect();
+  const sp=document.createElement('div'); sp.className='hpPop '+cls; sp.textContent=text;
+  sp.style.left=(r.left + r.width/2)+'px'; sp.style.top=(r.top + 10)+'px';
+  sp.style.position='fixed'; sp.style.fontSize='18px';
+  document.body.appendChild(sp);
+  sp.animate([{transform:'translate(-50%,0)', opacity:1},{transform:'translate(-50%,-24px)', opacity:0}],{duration:900,easing:'ease-out'})
+    .onfinish=()=>sp.remove();
+}
+
+function tapToAdvance(){return new Promise(res=>stage.addEventListener('click',function h(){stage.removeEventListener('click',h);res();},{once:true}))}
+
+/* ================== XP / LOG / UTIL ================== */
+function gainXP(t,x){
+  const beforeLvl=t.level;
+  t.xp+=x;
+  while(t.xp>=t.next){
+    t.xp-=t.next; t.level++; t.maxHp+=10; t.hp=Math.min(t.maxHp,t.hp+10);
+    t.next=rand(24+t.level*2,45+t.level*3);
+  }
+  if(t.level>beforeLvl){ levelUpPopup(t); logNow(`${t.name} leveled up! (Lv ${t.level})`); }
+}
+function levelUpPopup(t){
+  const o=document.createElement('div');
+  o.style.position='fixed';o.style.inset='0';o.style.background='rgba(0,0,0,.6)';o.style.zIndex='200';
+  o.style.display='flex';o.style.alignItems='center';o.style.justifyContent='center';
+  o.innerHTML=`<div style="background:#0f172a;border:1px solid #1f274f;border-radius:14px;padding:18px;min-width:280px;text-align:center">
+    <div style="font-size:22px;font-weight:800;margin-bottom:6px">Level Up!</div>
+    <div style="font-size:18px;margin-bottom:8px">${t.name} is now <strong>Lv ${t.level}</strong></div>
+    <div style="font-size:14px;color:#cbd5e1">Max HP +10, healed a bit!</div>
+    <div style="margin-top:12px;font-size:12px;color:#9ca3af">Tap anywhere</div>
+  </div>`;
+  document.body.appendChild(o);
+  o.addEventListener('click',()=>o.remove(),{once:true});
+}
+
+function renderLog(){
+  // newest first, always visible
+  logEl.innerHTML = state.log.slice(0,200).map(s=>`<div>${esc(s)}</div>`).join('');
+}
+function logNow(s){
+  const t=new Date(); const hh=String(t.getHours()).padStart(2,'0'),mm=String(t.getMinutes()).padStart(2,'0');
+  state.log.unshift(`[${hh}:${mm}] ${s}`); save(); renderLog();
+}
+
+function rand(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function randXP(){const x=Math.random();if(x<.06)return 7;if(x<.3)return 3;return 1;}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+/* ================== TARGETING HELPERS ================== */
 function highlightTargets(kind, excludeId=null){
-  document.querySelectorAll('.card').forEach(c=>{
+  $all('.card').forEach(c=>{
     const id=c.dataset.id;
     c.classList.remove('targetable');
     if(kind==='any' || (kind==='others' && id!==excludeId)) c.classList.add('targetable');
   });
 }
-function shrinkExcept(id,on){document.querySelectorAll('.card').forEach(c=>{ if(c.dataset.id!==id){ on?c.classList.add('shrink'):c.classList.remove('shrink'); }});}
+function shrinkExcept(id,on){$all('.card').forEach(c=>{ if(c.dataset.id!==id){ on?c.classList.add('shrink'):c.classList.remove('shrink'); }});}
 function unshrink(){shrinkExcept('',false);}
-function lockButtons(on){ document.querySelectorAll('button').forEach(b=>b.classList.toggle('disabled',on)); }
+function lockButtons(on){ $all('button').forEach(b=>b.classList.toggle('disabled',on)); }
 
-/* ================= BATTLE STAGE / FX ================= */
-const stage=$('#stage'), attSprite=$('#attSprite'), defSprite=$('#defSprite'), impact=$('#impact'), nText=$('#nText');
-function chibi(style){
-  // “Ghibli-ish” pastel paper-doll: soft fills + ink outline
-  const palette={
-    forest:{c:'#fce7f3', robe:'#93c5fd'}, samurai:{c:'#fde68a', robe:'#60a5fa'},
-    ninja:{c:'#e9d5ff', robe:'#34d399'}, spirit:{c:'#cffafe', robe:'#f472b6'}
-  }[style]||{c:'#e5e7eb',robe:'#93c5fd'};
-  return `
-  <svg class="chibi" viewBox="0 0 130 130" width="130" height="130" aria-hidden="true">
-    <defs>
-      <filter id="ink" x="-20%" y="-20%" width="140%" height="140%">
-        <feTurbulence baseFrequency="0.9" numOctaves="1" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="0.4"/>
-      </filter>
-    </defs>
-    <g filter="url(#ink)" stroke="#0a0a0a" stroke-width="2">
-      <circle cx="65" cy="34" r="18" fill="${palette.c}"/>
-      <rect x="45" y="52" width="40" height="44" rx="10" fill="${palette.robe}"/>
-      <rect class="arm arm-l" x="20" y="55" width="24" height="10" rx="5" fill="${palette.c}"/>
-      <rect class="arm arm-r" x="86" y="55" width="24" height="10" rx="5" fill="${palette.c}"/>
-      <rect x="52" y="96" width="26" height="20" rx="6" fill="${palette.c}"/>
-    </g>
-  </svg>`;
-}
-function sprite(team){const d=document.createElement('div');d.innerHTML=chibi(team.style);const s=d.firstElementChild;return s;}
-
-async function runStage(att,def,lines,opts){
-  stage.classList.add('show');
-  attSprite.innerHTML=''; defSprite.innerHTML='';
-  const A=sprite(att), D=sprite(def);
-  A.classList.add('chibi','wave'); D.classList.add('chibi');
-  attSprite.appendChild(A); defSprite.appendChild(D);
-  attSprite.classList.remove('in'); defSprite.classList.remove('in'); impact.classList.remove('show');
-  await sleep(20);
-  attSprite.classList.add('in'); defSprite.classList.add('in');
-  await sleep(480);
-
-  // FX
-  if(opts.effect==='projectile'){ projectileFX(attSprite,defSprite); }
-  else { slashFX(attSprite,defSprite); A.classList.add('strike'); }
-  await sleep(320);
-  if(opts.damage>0){ impact.classList.add('show'); await sleep(540); impact.classList.remove('show'); }
-
-  // Narration (tap to continue each line)
-  for(const line of lines){ nText.textContent=line; await tapToAdvance(); }
-  stage.classList.remove('show');
-}
-function tapToAdvance(){return new Promise(res=>stage.addEventListener('click',function h(){stage.removeEventListener('click',h);res();},{once:true}))}
-function pos(el){const r=el.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};}
-function projectileFX(from,to){const a=pos(from),b=pos(to),p=document.createElement('div');p.className='projectile';document.body.appendChild(p);
-  p.style.left=(a.x-10)+'px';p.style.top=(a.y-10)+'px';
-  p.animate([{left:(a.x-10)+'px',top:(a.y-10)+'px',transform:'scale(.7)'},{left:(b.x-10)+'px',top:(b.y-10)+'px',transform:'scale(1.2)'}],
-    {duration:280,easing:'cubic-bezier(.2,.6,.2,1)'}).onfinish=()=>p.remove();}
-function slashFX(from,to){const b=pos(to),s=document.createElement('div');s.className='slash';s.style.left=(b.x-75)+'px';s.style.top=(b.y-4)+'px';
-  document.body.appendChild(s);s.animate([{opacity:0,transform:'scaleX(.4) rotate(15deg)'},{opacity:1,transform:'scaleX(1) rotate(0deg)'}],{duration:220}).onfinish=()=>s.remove();}
-
-/* ================ XP / LOG ================= */
-function gainXP(t,x){ t.xp+=x; while(t.xp>=t.next){ t.xp-=t.next; t.level++; t.maxHp+=10; t.hp=Math.min(t.maxHp,t.hp+10);
-  t.next=rand(24+t.level*2,45+t.level*3); logNow(`${t.name} leveled up! (Lv ${t.level})`);} }
-function renderLog(){ const arr=[...state.log]; logEl.innerHTML=arr.slice(0,180).map(s=>`<div>${esc(s)}</div>`).join(''); }
-function logNow(s){ const t=new Date(); const hh=String(t.getHours()).padStart(2,'0'),mm=String(t.getMinutes()).padStart(2,'0'); state.log.unshift(`[${hh}:${mm}] ${s}`); save(); renderLog(); }
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
-
-/* ================ UTIL ================= */
-function rand(a,b){return a+Math.floor(Math.random()*(b-a+1));}
-function randXP(){const x=Math.random();if(x<.06)return 7;if(x<.3)return 3;return 1;}
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-
-/* ================ DRAWING (smoothed) ================= */
+/* ================== DRAWING (Pencil smoothing) ================== */
 const dC=$('#drawCanvas'), dctx=dC.getContext('2d',{alpha:true,willReadFrequently:true});
 let drawOn=false, drawing=false, last={x:0,y:0}, dcolor='red';
 function resizeDraw(){ dC.width=innerWidth*2; dC.height=innerHeight*2; dC.style.width='100%'; dC.style.height='100%'; dctx.setTransform(1,0,0,1,0,0); dctx.scale(2,2); }
@@ -408,7 +616,7 @@ dC.addEventListener('pointermove',e=>{
   const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
   for(const ce of evs){ stroke(last,pt(ce),ce.pressure||1); last=pt(ce); }
 });
-function stroke(a,b,p){ dctx.strokeStyle=dcolor; dctx.lineWidth=Math.max(2.5,3.5*(p||1)); dctx.lineCap='round'; dctx.lineJoin='round';
+function stroke(a,b,p){ dctx.strokeStyle=dcolor; dctx.lineWidth=Math.max(2.5,3.8*(p||1)); dctx.lineCap='round'; dctx.lineJoin='round';
   dctx.beginPath(); dctx.moveTo(a.x,a.y); dctx.lineTo(b.x,b.y); dctx.stroke(); }
 function pt(e){const r=dC.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
 </script>
